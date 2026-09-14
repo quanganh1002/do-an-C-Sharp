@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROOKIE - Admin </title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-cake">🧁</div>
+        <div>
+          <h1>ROOKIE</h1>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item active" href="#">
+          <i class="fa-solid fa-house"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <div class="nav-group">
+          <button class="nav-item nav-toggle">
+            <span class="nav-left">
+              <i class="fa-solid fa-cake-candles"></i>
+              <span>Sản phẩm</span>
+            </span>
+            <i class="fa-solid fa-chevron-down arrow"></i>
+          </button>
+          <div class="submenu">
+            <a href="#">Danh sách sản phẩm</a>
+            <a href="#">Thêm sản phẩm</a>
+            <a href="#">Danh mục</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <button class="nav-item nav-toggle">
+            <span class="nav-left">
+              <i class="fa-solid fa-cart-shopping"></i>
+              <span>Đơn hàng</span>
+            </span>
+            <i class="fa-solid fa-chevron-down arrow"></i>
+          </button>
+        </div>
+
+        <div class="nav-group">
+          <button class="nav-item nav-toggle">
+            <span class="nav-left">
+              <i class="fa-solid fa-box"></i>
+              <span>Kho hàng</span>
+            </span>
+            <i class="fa-solid fa-chevron-down arrow"></i>
+          </button>
+        </div>
+
+        <a class="nav-item" href="#">
+          <i class="fa-solid fa-users"></i>
+          <span>Khách hàng</span>
+        </a>
+
+        <a class="nav-item" href="#">
+          <i class="fa-solid fa-chart-column"></i>
+          <span>Doanh thu</span>
+        </a>
+
+        <a class="nav-item" href="#">
+          <i class="fa-solid fa-gear"></i>
+          <span>Cài đặt</span>
+        </a>
+      </nav>
+
+     
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" placeholder="Tìm kiếm..." id="searchInput">
+        </div>
+
+        <div class="top-actions">
+          <button class="notification" title="Thông báo">
+            <i class="fa-regular fa-bell"></i>
+            <b>3</b>
+          </button>
+
+          <div class="profile">
+            <div class="avatar">👩🏻‍🍳</div>
+            <div>
+              <strong>Admin</strong>
+              <small>Quản trị viên</small>
+            </div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+
+      <div class="content">
+
+        <!-- WELCOME -->
+        <section class="welcome">
+          <div>
+            <h2>Xin chào, Admin! 👋</h2>
+            <p>Chúc bạn một ngày làm việc hiệu quả!</p>
+          </div>
+          <div class="welcome-cake">🍰</div>
+        </section>
+
+        <!-- DASHBOARD GRID -->
+        <div class="dashboard-layout">
+
+          <section class="left-column">
+
+            <!-- STAT CARDS -->
+            <div class="stats-grid">
+              <article class="stat-card pink">
+                <div class="stat-icon">🧁</div>
+                <div class="stat-number">128</div>
+                <div class="stat-label">Sản phẩm</div>
+                <div class="growth">↗ +5% <span>so với tuần trước</span></div>
+              </article>
+
+              <article class="stat-card yellow">
+                <div class="stat-icon">🛒</div>
+                <div class="stat-number">24</div>
+                <div class="stat-label">Đơn hàng hôm nay</div>
+                <div class="growth">↗ +12% <span>so với hôm qua</span></div>
+              </article>
+
+              <article class="stat-card green">
+                <div class="stat-icon">👥</div>
+                <div class="stat-number">1.284</div>
+                <div class="stat-label">Khách hàng</div>
+                <div class="growth">↗ +8% <span>so với tháng trước</span></div>
+              </article>
+
+              <article class="stat-card purple">
+                <div class="stat-icon">₫</div>
+                <div class="stat-number">12.500.000đ</div>
+                <div class="stat-label">Doanh thu hôm nay</div>
+                <div class="growth">↗ +15% <span>so với hôm qua</span></div>
+              </article>
+            </div>
+
+            <!-- CHART + RECENT ORDERS -->
+            <div class="two-col">
+
+              <article class="panel revenue-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-chart-line"></i> Doanh thu</h3>
+                  <select id="period">
+                    <option>7 ngày gần đây</option>
+                    <option>30 ngày gần đây</option>
+                    <option>6 tháng</option>
+                  </select>
+                </div>
+                <div class="chart-wrap">
+                  <canvas id="revenueChart"></canvas>
+                </div>
+              </article>
+
+              <article class="panel orders-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-clipboard-list"></i> Đơn hàng gần đây</h3>
+                  <a href="#">Xem tất cả →</a>
+                </div>
+
+                <div class="order-list">
+                  <div class="order">
+                    <div class="product-thumb">🍰</div>
+                    <div class="order-info">
+                      <b>#DH001</b>
+                      <span>Nguyễn Thị A</span>
+                    </div>
+                    <strong>250.000đ</strong>
+                    <div><em class="status working">Đang làm</em><small>10 phút trước</small></div>
+                  </div>
+
+                  <div class="order">
+                    <div class="product-thumb">🍪</div>
+                    <div class="order-info">
+                      <b>#DH002</b>
+                      <span>Trần Văn B</span>
+                    </div>
+                    <strong>180.000đ</strong>
+                    <div><em class="status shipping">Đang giao</em><small>1 giờ trước</small></div>
+                  </div>
+
+                  <div class="order">
+                    <div class="product-thumb">🧁</div>
+                    <div class="order-info">
+                      <b>#DH003</b>
+                      <span>Lê Thị C</span>
+                    </div>
+                    <strong>420.000đ</strong>
+                    <div><em class="status done">Hoàn tất</em><small>2 giờ trước</small></div>
+                  </div>
+
+                  <div class="order">
+                    <div class="product-thumb">🍰</div>
+                    <div class="order-info">
+                      <b>#DH004</b>
+                      <span>Phạm Văn D</span>
+                    </div>
+                    <strong>320.000đ</strong>
+                    <div><em class="status working">Đang làm</em><small>3 giờ trước</small></div>
+                  </div>
+
+                  <div class="order">
+                    <div class="product-thumb">🍪</div>
+                    <div class="order-info">
+                      <b>#DH005</b>
+                      <span>Hoàng Thị E</span>
+                    </div>
+                    <strong>150.000đ</strong>
+                    <div><em class="status pending">Chờ xác nhận</em><small>5 giờ trước</small></div>
+                  </div>
+                </div>
+              </article>
+
+            </div>
+
+            <!-- BOTTOM LEFT -->
+            <div class="two-col bottom-row">
+
+              <article class="panel best-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-crown"></i> Sản phẩm bán chạy</h3>
+                  <a href="#">Xem tất cả →</a>
+                </div>
+
+                <div class="best-list">
+                  <div class="best-product">
+                    <span class="rank">1</span>
+                    <div class="best-thumb"></div>
+                    <div class="best-name"><b>Strawberry Cake</b><small>Bánh kem</small></div>
+                    <span>235 đã bán</span>
+                    <div class="bar"><i style="width:92%"></i></div>
+                  </div>
+
+                  <div class="best-product">
+                    <span class="rank">2</span>
+                    <div class="best-thumb"></div>
+                    <div class="best-name"><b>Chocolate Cookie</b><small>Bánh quy</small></div>
+                    <span>198 đã bán</span>
+                    <div class="bar"><i style="width:78%"></i></div>
+                  </div>
+
+                  <div class="best-product">
+                    <span class="rank">3</span>
+                    <div class="best-thumb"></div>
+                    <div class="best-name"><b>Matcha Cake</b><small>Bánh kem</small></div>
+                    <span>156 đã bán</span>
+                    <div class="bar"><i style="width:63%"></i></div>
+                  </div>
+
+                  <div class="best-product">
+                    <span class="rank">4</span>
+                    <div class="best-thumb"></div>
+                    <div class="best-name"><b>Cupcake Vanilla</b><small>Cupcake</small></div>
+                    <span>132 đã bán</span>
+                    <div class="bar"><i style="width:52%"></i></div>
+                  </div>
+
+                  <div class="best-product">
+                    <span class="rank">5</span>
+                    <div class="best-thumb"></div>
+                    <div class="best-name"><b>Red Velvet Cake</b><small>Bánh kem</small></div>
+                    <span>120 đã bán</span>
+                    <div class="bar"><i style="width:45%"></i></div>
+                  </div>
+                </div>
+              </article>
+
+              <div class="right-mini">
+                <article class="panel status-panel">
+                  <div class="panel-header">
+                    <h3><i class="fa-solid fa-circle-notch"></i> Trạng thái đơn hàng</h3>
+                  </div>
+                  <div class="status-content">
+                    <div class="donut"><span><b>24</b>đơn hàng</span></div>
+                    <ul>
+                      <li><i class="dot orange"></i>Đang làm <b>8 (33%)</b></li>
+                      <li><i class="dot blue"></i>Đang giao <b>7 (29%)</b></li>
+                      <li><i class="dot green"></i>Hoàn tất <b>6 (25%)</b></li>
+                      <li><i class="dot red"></i>Hủy <b>3 (13%)</b></li>
+                    </ul>
+                  </div>
+                </article>
+
+        
+              </div>
+
+            </div>
+          </section>
+
+          <!-- RIGHT SIDEBAR -->
+          <aside class="right-sidebar">
+
+            <article class="side-card today">
+              <div class="today-title">
+                <i class="fa-regular fa-calendar-days"></i>
+                <div>
+                  <h3>Hôm nay</h3>
+                  <span>13 tháng 9, 2026</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="side-card schedule">
+              <h3>Lịch làm việc</h3>
+              <div class="timeline">
+                <div><i class="timeline-dot pink-dot"></i><p><b>08:00 - 10:00</b><span>Chuẩn bị nguyên liệu</span></p></div>
+                <div><i class="timeline-dot yellow-dot"></i><p><b>10:00 - 12:00</b><span>Làm bánh</span></p></div>
+                <div><i class="timeline-dot green-dot"></i><p><b>13:30 - 15:00</b><span>Đóng gói đơn hàng</span></p></div>
+                <div><i class="timeline-dot purple-dot"></i><p><b>15:00 - 17:00</b><span>Giao hàng</span></p></div>
+              </div>
+            </article>
+
+            <article class="side-card stock">
+              <div class="panel-header">
+                <h3><i class="fa-solid fa-box"></i> Tồn kho bánh</h3>
+                <a href="#">Xem tất cả →</a>
+              </div>
+
+              <div class="stock-item">
+                <span class="stock-icon"></span>
+                <b>COOKIE</b><span>30 BÁNH</span><em class="enough">Đủ</em>
+              </div>
+              <div class="stock-item">
+                <span class="stock-icon"></span>
+                <b>CAKES</b><span>10 BÁNH</span><em class="low">Sắp hết</em>
+              </div>
+              <div class="stock-item">
+                <span class="stock-icon"></span>
+                <b>BREAD</b><span>20 BÁNH</span><em class="enough">Đủ</em>
+            </article>
+
+          </aside>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="admin/script.js"></script>
+</body>
+</html>
