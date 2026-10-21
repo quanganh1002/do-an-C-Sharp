@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rookie - Đăng nhập</title>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="login.css">
+</head>
+<body>
+  <div class="login">
+    <section class="login-brand">
+      <div class="logo">R</div>
+      <h1>Rookie</h1>
+      <p>Hệ thống quản lý tiệm bánh – bán hàng online, quản lý sản phẩm, đơn hàng và kho.</p>
+    </section>
+
+    <section class="login-form">
+      <form id="loginForm" autocomplete="off">
+        <h2>Đăng nhập</h2>
+        <p class="sub">Vui lòng nhập tài khoản được quản lý cấp</p>
+
+        <label for="username">Tên đăng nhập</label>
+        <input id="username" type="text" autofocus>
+
+        <label for="password">Mật khẩu</label>
+        <input id="password" type="password">
+
+        <div class="row">
+          <label class="remember"><input id="remember" type="checkbox" checked> Ghi nhớ đăng nhập</label>
+          <a href="#" id="forgot">Quên mật khẩu?</a>
+        </div>
+
+        <p class="error" id="error"></p>
+        <button type="submit">ĐĂNG NHẬP</button>
+        <p class="note">Sai mật khẩu 5 lần liên tiếp, tài khoản bị khóa 15 phút</p>
+      </form>
+    </section>
+  </div>
+
+  <script src="login.js"></script>
+</body>
+</html>

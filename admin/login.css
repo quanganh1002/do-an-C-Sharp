@@ -1,0 +1,88 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Be Vietnam Pro", sans-serif;
+  font-size: 13px;
+  color: #3f2a1f;
+}
+
+.login { display: flex; min-height: 100vh; }
+
+.login-brand {
+  flex: 0 0 40%;
+  background: linear-gradient(160deg, #5a3a28 0%, #8c5a3a 60%, #e0983f 130%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 40px;
+}
+
+.logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fbe9d8;
+  color: #5a3a28;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.login-brand h1 { font-size: 30px; margin-bottom: 8px; }
+.login-brand p { font-size: 12px; line-height: 1.6; max-width: 300px; opacity: .92; }
+
+.login-form {
+  flex: 1;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 8%;
+}
+
+form { width: 100%; max-width: 330px; }
+form h2 { font-size: 21px; margin-bottom: 6px; }
+.sub { font-size: 11px; color: #8d7c73; margin-bottom: 22px; }
+
+form > label { display: block; font-size: 10px; color: #6a5648; margin-bottom: 5px; }
+
+form input[type="text"], form input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e3c9ad;
+  border-radius: 6px;
+  font: inherit;
+  outline: 0;
+  margin-bottom: 16px;
+}
+
+form input[type="text"]:focus, form input[type="password"]:focus { border-color: #c98235; }
+
+.row { display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; margin-bottom: 14px; }
+.remember { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+.row a { color: #c98235; text-decoration: none; }
+
+.error { color: #c0392b; font-size: 11px; min-height: 16px; margin-bottom: 6px; }
+
+button[type="submit"] {
+  width: 100%;
+  border: 0;
+  border-radius: 6px;
+  background: #c98235;
+  color: #fff;
+  padding: 11px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button[type="submit"]:hover { background: #b87329; }
+.note { text-align: center; font-size: 9.5px; color: #8d7c73; margin-top: 12px; }
+
+@media (max-width: 760px) {
+  .login { flex-direction: column; }
+  .login-brand { flex: none; padding: 30px 24px; }
+  .login-form { padding: 30px 24px; }
+}

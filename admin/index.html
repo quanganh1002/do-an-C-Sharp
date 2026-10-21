@@ -3,13 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SweetBake - Admin</title>
+  <title>Rookie - Admin</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
+  <script>
+    // Chưa đăng nhập thì chuyển sang trang đăng nhập
+    (function () {
+      var s = null;
+      try { s = localStorage.getItem("sweetbake:session") || sessionStorage.getItem("sweetbake:session"); } catch (e) {}
+      if (!s) location.replace("login.html");
+    })();
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -20,8 +28,8 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-logo">S</div>
-        <h1>SweetBake</h1>
+        <div class="brand-logo">R</div>
+        <h1>Rookie</h1>
       </div>
 
       <nav class="sidebar-nav">
@@ -33,7 +41,7 @@
 
         <div class="nav-label">SẢN XUẤT &amp; KHO</div>
         <button class="nav-item" data-view="tasks">Đơn cần làm</button>
-        <button class="nav-item" data-view="receipts">Nhập kho</button>
+        <button class="nav-item" data-view="receipts">Nhập bánh</button>
         <button class="nav-item" data-view="disposals">Phiếu hủy</button>
 
         <div class="nav-label">QUẢN TRỊ</div>
@@ -43,8 +51,8 @@
       </nav>
 
       <div class="sidebar-user">
-        Lê Thị Thu Hà · Thu ngân<br>
-        <a>Đăng xuất</a>
+        <span id="userInfo"></span><br>
+        <a id="logout">Đăng xuất</a>
       </div>
     </aside>
 
@@ -343,20 +351,26 @@
       <!-- BÁO CÁO -->
       <section class="view" id="view-report">
         <div class="view-pad">
-          <h2 class="view-title">Báo cáo - thống kê</h2>
+          <div class="toolbar">
+            <h2>Báo cáo – thống kê</h2>
+            <select id="rpMonth"></select>
+            <button class="btn" id="rpExcel">Xuất Excel</button>
+            <button class="btn" id="rpPdf">In PDF</button>
+          </div>
           <div class="stat4">
-            <div><small>Doanh thu (30 ngày)</small><b id="rpRevenue"></b></div>
+            <div><small>Doanh thu</small><b id="rpRevenue"></b></div>
             <div><small>Số hóa đơn</small><b id="rpCount"></b></div>
             <div><small>Đơn hủy</small><b id="rpCancel"></b></div>
-            <div><small>Giá trị TB / đơn</small><b id="rpAvg"></b></div>
+            <div><small>Giá trị hao hụt</small><b id="rpWaste"></b></div>
           </div>
           <div class="report-grid">
             <div class="card">
-              <h3>Doanh thu 14 ngày gần nhất</h3>
+              <h3>Doanh thu theo ngày (triệu đồng)</h3>
               <div class="report-chart"><canvas id="reportChart"></canvas></div>
             </div>
             <div class="card">
-              <h3>Top bánh bán chạy</h3><div id="topList"></div>
+              <h3>Top 5 bánh bán chạy (số lượng)</h3>
+              <div id="topList"></div>
             </div>
           </div>
         </div>
@@ -366,7 +380,44 @@
       <section class="view" id="view-customers"><div class="view-pad crud" data-entity="customers"></div></section>
       <section class="view" id="view-invoices"><div class="view-pad crud" data-entity="invoices"></div></section>
       <section class="view" id="view-tasks"><div class="view-pad crud" data-entity="tasks"></div></section>
-      <section class="view" id="view-receipts"><div class="view-pad crud" data-entity="receipts"></div></section>
+      <section class="view" id="view-receipts">
+        <div class="view-pad">
+          <h2 class="view-title">Lập phiếu nhập bánh</h2>
+
+          <div class="card imp-head">
+            <div class="field"><label>Mã phiếu</label><input id="impCode" type="text" readonly></div>
+            <div class="field"><label>Nhà cung cấp</label><select id="impSupplier"></select></div>
+            <div class="field"><label>Ngày nhập</label><input id="impTime" type="text" readonly></div>
+            <div class="field"><label>Người lập</label><input id="impBy" type="text" readonly></div>
+          </div>
+
+          <div class="card imp-line">
+            <div class="field"><label>Bánh</label><select id="impProduct"></select></div>
+            <div class="field"><label>Số lượng</label><input id="impQty" type="number" min="1"></div>
+            <div class="field"><label>Đơn giá nhập (đ)</label><input id="impPrice" type="number" min="0"></div>
+            <div class="field"><label>Hạn sử dụng</label><input id="impExpiry" type="date"></div>
+            <button class="btn add" id="impAdd">+ Thêm dòng</button>
+          </div>
+
+          <div class="card">
+            <table class="data">
+              <thead><tr><th>#</th><th>Bánh</th><th>ĐVT</th><th class="r">Số lượng</th><th class="r">Đơn giá</th><th>HSD</th><th class="r">Thành tiền</th><th></th></tr></thead>
+              <tbody id="impLines"></tbody>
+            </table>
+            <div class="imp-foot">
+              <span>Tổng tiền: <b id="impTotal">0đ</b></span>
+              <button class="btn" id="impCancel">Hủy</button>
+              <button class="btn add" id="impSave">Lưu &amp; in phiếu nhập</button>
+            </div>
+          </div>
+
+          <h3 class="view-title imp-hist-title">Lịch sử phiếu nhập</h3>
+          <table class="data">
+            <thead><tr><th>Mã phiếu</th><th>Thời gian</th><th>Nhà cung cấp</th><th>Người lập</th><th class="r">Tổng tiền</th><th class="r">Thao tác</th></tr></thead>
+            <tbody id="impHistory"></tbody>
+          </table>
+        </div>
+      </section>
       <section class="view" id="view-disposals"><div class="view-pad crud" data-entity="disposals"></div></section>
       <section class="view" id="view-products"><div class="view-pad crud" data-entity="products"></div></section>
       <section class="view" id="view-staff"><div class="view-pad crud" data-entity="staff"></div></section>

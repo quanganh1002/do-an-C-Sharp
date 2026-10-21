@@ -59,7 +59,7 @@ const db = {
         { id: 1, product: "Croissant bơ Pháp", qty: 30, due: dayKey(new Date()), status: "Đang làm", note: "Đơn online buổi sáng" },
         { id: 2, product: "Tiramisu ly", qty: 20, due: dayKey(new Date()), status: "Chờ làm", note: "" }
     ]),
-    receipts: load("receipts", () => []),
+    importSlips: load("importSlips", () => []),
     disposals: load("disposals", () => [])
 };
 
@@ -286,37 +286,6 @@ const entities = {
             return null;
         },
         searchText: t => t.product + " " + t.status + " " + (t.note || "")
-    },
-    receipts: {
-        title: "Nhập kho",
-        addLabel: "+ Tạo phiếu nhập",
-        stamp: true,
-        noEdit: true,
-        columns: [
-            ["Thời gian", r => fmtTime(r.time)],
-            ["Sản phẩm", r => esc(r.product)],
-            ["Số lượng nhập", r => r.qty, "r"],
-            ["Ghi chú", r => esc(r.note || "")]
-        ],
-        fields: [
-            { key: "product", label: "Sản phẩm", type: "select", options: () => db.products.map(p => p.name) },
-            { key: "qty", label: "Số lượng nhập", type: "number", required: true },
-            { key: "note", label: "Ghi chú", type: "text" }
-        ],
-        apply: obj => {
-            const p = db.products.find(x => x.name === obj.product);
-            if (!p) return "Không tìm thấy sản phẩm";
-            p.stock += obj.qty;
-            return null;
-        },
-        revert: r => {
-            const p = db.products.find(x => x.name === r.product);
-            if (!p) return null;
-            if (p.stock < r.qty) return "Tồn kho hiện tại không đủ để hoàn tác phiếu nhập này";
-            p.stock -= r.qty;
-            return null;
-        },
-        searchText: r => r.product + " " + (r.note || "")
     },
     disposals: {
         title: "Phiếu hủy",
@@ -570,7 +539,7 @@ navItems.forEach(b => b.addEventListener("click", () => showView(b.dataset.view)
 
 const moneyTick = v => (v / 1000).toLocaleString("vi-VN") + "k";
 
-function lineChart(canvasId) {
+function lineChart(canvasId, orange) {
     return new Chart(document.getElementById(canvasId), {
         type: "line",
         data: {
@@ -578,13 +547,13 @@ function lineChart(canvasId) {
             datasets: [{
                 label: "Doanh thu",
                 data: [],
-                borderColor: "#df777a",
-                backgroundColor: "rgba(223,119,122,0.12)",
+                borderColor: orange ? "#c98235" : "#df777a",
+                backgroundColor: orange ? "transparent" : "rgba(223,119,122,0.12)",
                 borderWidth: 2,
-                pointRadius: 3,
+                pointRadius: orange ? 0 : 3,
                 pointHoverRadius: 5,
                 tension: 0.38,
-                fill: true
+                fill: !orange
             }]
         },
         options: {
@@ -595,7 +564,7 @@ function lineChart(canvasId) {
                 tooltip: { callbacks: { label: c => fmt(c.raw) } }
             },
             scales: {
-                y: { beginAtZero: true, ticks: { callback: moneyTick }, grid: { color: "#eee7e1" }, border: { display: false } },
+                y: { beginAtZero: true, ticks: { callback: orange ? (v => (v / 1e6).toLocaleString("vi-VN")) : moneyTick }, grid: { color: "#eee7e1" }, border: { display: false } },
                 x: { grid: { color: "#f0eae5" }, border: { display: false } }
             }
         }
@@ -610,7 +579,7 @@ function setChart(chart, n) {
 }
 
 const homeChart = lineChart("revenueChart");
-const reportChart = lineChart("reportChart");
+const reportChart = lineChart("reportChart", true);
 let homeDays = 7;
 
 document.getElementById("period").addEventListener("change", e => {
@@ -627,30 +596,90 @@ function renderHomeStats() {
     document.getElementById("hmRevenue").textContent = fmt(todayInv.reduce((s, i) => s + i.total, 0));
 }
 
-function renderReport() {
-    const since = new Date();
-    since.setDate(since.getDate() - 29);
-    since.setHours(0, 0, 0, 0);
-    const inv = db.invoices.filter(i => new Date(i.time) >= since);
+// Dữ liệu báo cáo của tháng đang chọn (giá trị "yyyy-mm")
+function reportData() {
+    const month = document.getElementById("rpMonth").value;
+    const inMonth = iso => dayKey(new Date(iso)).slice(0, 7) === month;
+    const inv = db.invoices.filter(i => inMonth(i.time));
     const ok = inv.filter(i => i.status === "ok");
     const revenue = ok.reduce((s, i) => s + i.total, 0);
-
-    document.getElementById("rpRevenue").textContent = revenue >= 1e6
-        ? (revenue / 1e6).toFixed(1).replace(".", ",") + " triệu" : fmt(revenue);
-    document.getElementById("rpCount").textContent = inv.length.toLocaleString("vi-VN");
-    document.getElementById("rpCancel").textContent = inv.length - ok.length;
-    document.getElementById("rpAvg").textContent = fmt(ok.length ? Math.round(revenue / ok.length) : 0);
+    const waste = db.disposals.filter(d => inMonth(d.time)).reduce((s, d) => {
+        const p = db.products.find(x => x.name === d.product);
+        return s + (p ? p.price * d.qty : 0);
+    }, 0);
 
     const qty = {};
     ok.forEach(i => i.items.forEach(x => { qty[x.name] = (qty[x.name] || 0) + x.qty; }));
     const top = Object.entries(qty).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    const max = top.length ? top[0][1] : 1;
-    document.getElementById("topList").innerHTML = top.map(([n, q]) => `
-        <div class="hbar"><span>${esc(n)}</span><div><i style="width:${Math.round(q / max * 100)}%"></i></div><em>${q}</em></div>`).join("")
+
+    const [y, m] = month.split("-").map(Number);
+    const days = new Date(y, m, 0).getDate();
+    const daily = Array.from({ length: days }, () => 0);
+    ok.forEach(i => { daily[new Date(i.time).getDate() - 1] += i.total; });
+
+    return { month, inv, ok, revenue, waste, top, daily };
+}
+
+const millions = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(".", ",") + " triệu" : fmt(n);
+
+function renderReport() {
+    const sel = document.getElementById("rpMonth");
+    if (!sel.options.length) {
+        for (let k = 0; k < 6; k++) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - k, 1);
+            const o = document.createElement("option");
+            o.value = d.getFullYear() + "-" + pad(d.getMonth() + 1);
+            o.textContent = "Tháng " + pad(d.getMonth() + 1) + "/" + d.getFullYear();
+            sel.appendChild(o);
+        }
+    }
+
+    const r = reportData();
+    document.getElementById("rpRevenue").textContent = millions(r.revenue);
+    document.getElementById("rpCount").textContent = r.inv.length.toLocaleString("vi-VN");
+    document.getElementById("rpCancel").textContent = r.inv.length - r.ok.length;
+    document.getElementById("rpWaste").textContent = millions(r.waste)
+        + (r.revenue ? " (" + (r.waste / r.revenue * 100).toFixed(1).replace(".", ",") + "%)" : "");
+
+    const max = r.top.length ? r.top[0][1] : 1;
+    document.getElementById("topList").innerHTML = r.top.map(([n, q]) => `
+        <div class="hbar"><span>${esc(n)}</span><div><i style="width:${Math.round(q / max * 100)}%"></i></div><em>${q.toLocaleString("vi-VN")}</em></div>`).join("")
         || `<p class="placeholder">Chưa có dữ liệu</p>`;
 
-    setChart(reportChart, 14);
+    reportChart.data.labels = r.daily.map((_, i) => i + 1);
+    reportChart.data.datasets[0].data = r.daily;
+    reportChart.update();
 }
+
+document.getElementById("rpMonth").addEventListener("change", renderReport);
+
+document.getElementById("rpPdf").addEventListener("click", () => window.print());
+
+// Xuất CSV (Excel mở được), có BOM để không lỗi tiếng Việt
+document.getElementById("rpExcel").addEventListener("click", () => {
+    const r = reportData();
+    const q = v => '"' + String(v).replace(/"/g, '""') + '"';
+    const lines = [
+        ["Báo cáo tháng", r.month],
+        ["Doanh thu", r.revenue],
+        ["Số hóa đơn", r.inv.length],
+        ["Đơn hủy", r.inv.length - r.ok.length],
+        ["Giá trị hao hụt", r.waste],
+        [],
+        ["Ngày", "Doanh thu"],
+        ...r.daily.map((v, i) => [i + 1, v]),
+        [],
+        ["Top bánh bán chạy", "Số lượng"],
+        ...r.top
+    ].map(row => row.map(q).join(","));
+    const url = URL.createObjectURL(new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "bao-cao-" + r.month + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+});
 
 
 // ================================
@@ -816,10 +845,184 @@ document.addEventListener("keydown", e => {
 
 
 // ================================
+// NHẬP BÁNH (phiếu nhập nhiều dòng)
+// ================================
+
+const SUPPLIERS = [
+    "NCC01 – Xưởng bánh Hoa Sen",
+    "NCC02 – Cơ sở bánh ngọt Minh Anh",
+    "NCC03 – Tiệm bánh mì Sài Gòn",
+    "NCC04 – Bếp bánh quy Bơ Vàng"
+];
+
+const impLines = [];
+
+function sessionName() {
+    try {
+        const s = JSON.parse(localStorage.getItem("sweetbake:session") || sessionStorage.getItem("sweetbake:session"));
+        return s ? s.name : "";
+    } catch (e) {
+        return "";
+    }
+}
+
+function nextSlipCode() {
+    const now = new Date();
+    const n = db.importSlips.filter(s => dayKey(new Date(s.time)) === dayKey(now)).length;
+    return "PN" + codeFor(now, n + 1).slice(2);
+}
+
+const impTotal = () => impLines.reduce((s, l) => s + l.qty * l.price, 0);
+const fmtDate = d => d ? d.split("-").reverse().join("/") : "";
+
+function refreshImport() {
+    const supplier = document.getElementById("impSupplier");
+    if (!supplier.options.length) {
+        supplier.innerHTML = SUPPLIERS.map(s => `<option>${esc(s)}</option>`).join("");
+    }
+
+    const sel = document.getElementById("impProduct");
+    const cur = sel.value;
+    sel.innerHTML = db.products.map(p => `<option>${esc(p.name)}</option>`).join("");
+    if (db.products.some(p => p.name === cur)) sel.value = cur;
+
+    document.getElementById("impCode").value = nextSlipCode();
+    document.getElementById("impTime").value = fmtTime(new Date().toISOString());
+    document.getElementById("impBy").value = sessionName();
+
+    document.getElementById("impLines").innerHTML = impLines.length
+        ? impLines.map((l, i) => `
+            <tr>
+                <td>${i + 1}</td><td>${esc(l.product)}</td><td>cái</td>
+                <td class="r">${l.qty.toLocaleString("vi-VN")}</td>
+                <td class="r">${l.price.toLocaleString("vi-VN")}</td>
+                <td>${fmtDate(l.expiry)}</td>
+                <td class="r">${(l.qty * l.price).toLocaleString("vi-VN")}</td>
+                <td class="r"><button class="btn small danger" data-act="rm" data-i="${i}">×</button></td>
+            </tr>`).join("")
+        : `<tr><td class="empty-row" colspan="8">Chưa có dòng nào</td></tr>`;
+    document.getElementById("impTotal").textContent = fmt(impTotal());
+
+    document.getElementById("impHistory").innerHTML = db.importSlips.length
+        ? db.importSlips.slice().reverse().map(s => `
+            <tr>
+                <td>${s.code}</td><td>${fmtTime(s.time)}</td><td>${esc(s.supplier)}</td><td>${esc(s.by)}</td>
+                <td class="r">${fmt(s.total)}</td>
+                <td class="r">
+                    <button class="btn small" data-act="view" data-id="${s.id}">Xem</button>
+                    <button class="btn small danger" data-act="del" data-id="${s.id}">Xóa</button>
+                </td>
+            </tr>`).join("")
+        : `<tr><td class="empty-row" colspan="6">Chưa có phiếu nhập nào</td></tr>`;
+}
+
+function slipHtml(s) {
+    const rows = s.lines.map((l, i) => `
+        <tr><td>${i + 1}</td><td>${esc(l.product)}</td><td style="text-align:right">${l.qty}</td>
+        <td style="text-align:right">${l.price.toLocaleString("vi-VN")}</td><td>${fmtDate(l.expiry)}</td>
+        <td style="text-align:right">${(l.qty * l.price).toLocaleString("vi-VN")}</td></tr>`).join("");
+    return `
+        <p>Nhà cung cấp: ${esc(s.supplier)}<br>Ngày nhập: ${fmtTime(s.time)} · Người lập: ${esc(s.by)}</p>
+        <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse;width:100%;font-size:13px">
+        <tr><th>#</th><th>Bánh</th><th>SL</th><th>Đơn giá</th><th>HSD</th><th>Thành tiền</th></tr>${rows}</table>
+        <p style="text-align:right"><b>Tổng tiền: ${fmt(s.total)}</b></p>`;
+}
+
+function printSlip(s) {
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(`<html><head><meta charset="UTF-8"><title>${s.code}</title></head>
+        <body style="font-family:sans-serif;padding:20px"><h2>Phiếu nhập bánh ${s.code}</h2>${slipHtml(s)}</body></html>`);
+    w.document.close();
+    w.print();
+}
+
+document.getElementById("impAdd").addEventListener("click", () => {
+    const product = document.getElementById("impProduct").value;
+    const qty = Number(document.getElementById("impQty").value);
+    const price = Number(document.getElementById("impPrice").value);
+    if (!product) return alert("Chưa có sản phẩm, hãy thêm ở mục Sản phẩm");
+    if (!(qty > 0)) return alert("Vui lòng nhập số lượng");
+    if (!(price >= 0) || document.getElementById("impPrice").value === "") return alert("Vui lòng nhập đơn giá");
+    impLines.push({ product, qty, price, expiry: document.getElementById("impExpiry").value });
+    document.getElementById("impQty").value = "";
+    document.getElementById("impPrice").value = "";
+    document.getElementById("impExpiry").value = "";
+    refreshImport();
+});
+
+document.getElementById("impLines").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-act='rm']");
+    if (!btn) return;
+    impLines.splice(Number(btn.dataset.i), 1);
+    refreshImport();
+});
+
+document.getElementById("impCancel").addEventListener("click", () => {
+    impLines.length = 0;
+    refreshImport();
+});
+
+document.getElementById("impSave").addEventListener("click", () => {
+    if (!impLines.length) return alert("Phiếu nhập chưa có dòng nào");
+    const slip = {
+        id: nextId(db.importSlips),
+        code: document.getElementById("impCode").value,
+        time: new Date().toISOString(),
+        supplier: document.getElementById("impSupplier").value,
+        by: document.getElementById("impBy").value,
+        lines: impLines.map(l => ({ ...l })),
+        total: impTotal()
+    };
+    slip.lines.forEach(l => {
+        const p = db.products.find(x => x.name === l.product);
+        if (p) p.stock += l.qty;
+    });
+    db.importSlips.push(slip);
+    save("importSlips", db.importSlips);
+    save("products", db.products);
+    impLines.length = 0;
+    refreshAll();
+    printSlip(slip);
+});
+
+document.getElementById("impHistory").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const slip = db.importSlips.find(s => s.id === Number(btn.dataset.id));
+    if (!slip) return;
+
+    if (btn.dataset.act === "view") {
+        openModal("Phiếu nhập " + slip.code, slipHtml(slip), [
+            { label: "Đóng" },
+            { label: "In", cls: "add", fn: () => { printSlip(slip); return false; } }
+        ]);
+        return;
+    }
+
+    if (!confirm("Xóa phiếu " + slip.code + "? Số lượng bánh đã nhập sẽ bị trừ khỏi tồn kho.")) return;
+    const short = slip.lines.find(l => {
+        const p = db.products.find(x => x.name === l.product);
+        return p && p.stock < l.qty;
+    });
+    if (short) return alert("Tồn kho hiện tại không đủ để hoàn tác: " + short.product);
+    slip.lines.forEach(l => {
+        const p = db.products.find(x => x.name === l.product);
+        if (p) p.stock -= l.qty;
+    });
+    db.importSlips = db.importSlips.filter(s => s.id !== slip.id);
+    save("importSlips", db.importSlips);
+    save("products", db.products);
+    refreshAll();
+});
+
+
+// ================================
 // KHỞI TẠO
 // ================================
 
 function refreshAll() {
+    refreshImport();
     Object.keys(entities).forEach(refreshTable);
     renderProducts();
     renderCart();
@@ -829,6 +1032,23 @@ function refreshAll() {
     renderReport();
     setChart(homeChart, homeDays);
 }
+
+// Người đăng nhập + đăng xuất
+(function () {
+    let s = null;
+    try {
+        s = JSON.parse(localStorage.getItem("sweetbake:session") || sessionStorage.getItem("sweetbake:session"));
+    } catch (e) { /* chưa đăng nhập */ }
+    if (s) document.getElementById("userInfo").textContent = s.name + " · " + s.role;
+})();
+
+document.getElementById("logout").addEventListener("click", () => {
+    try {
+        localStorage.removeItem("sweetbake:session");
+        sessionStorage.removeItem("sweetbake:session");
+    } catch (e) { /* bỏ qua */ }
+    location.replace("login.html");
+});
 
 Object.keys(entities).forEach(buildEntity);
 refreshAll();

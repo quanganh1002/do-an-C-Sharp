@@ -11,9 +11,11 @@ Despite the repo name (`do-an-C-Sharp`), there is no C# code, solution, or build
 Two independent pages that share nothing:
 
 - `home/` — customer-facing storefront. `homepage.html` + `home.css`; images live in `home/pictures/` (some filenames contain spaces).
-- `admin/` — "SweetBake" admin, a single page (`index.html` + `style.css` + `script.js`) with a dark-brown sidebar that switches `<section class="view" id="view-NAME">` panels via `data-view="NAME"` buttons. Views: home (dashboard), pos (sales), report, and CRUD pages for products/customers/staff/invoices (config-driven via the `entities` object in `script.js`, rendered into `.crud[data-entity]` sections). The shop is online-only, so production, ingredients, recipes, cake pre-orders and promotions were deliberately removed. Uses Chart.js, Font Awesome and Google Fonts via CDN. There is no backend: data lives in `localStorage` (keys `sweetbake:*`), seeded with sample data on first load; clear those keys to reset.
+- `admin/` — "Rookie" admin, a single page (`index.html` + `style.css` + `script.js`) with a dark-brown sidebar that switches `<section class="view" id="view-NAME">` panels via `data-view="NAME"` buttons. Views: home (dashboard), pos (sales), report, and CRUD pages for products/customers/staff/invoices (config-driven via the `entities` object in `script.js`, rendered into `.crud[data-entity]` sections). The shop is online-only, so production, ingredients, recipes, cake pre-orders and promotions were deliberately removed. Uses Chart.js, Font Awesome and Google Fonts via CDN. There is no backend: data lives in `localStorage` (keys `sweetbake:*`), seeded with sample data on first load; clear those keys to reset.
 
 ## Gotchas
+
+- Login (`admin/login.html`, `login.js`) is client-side only: accounts are hardcoded in `login.js` and `index.html` redirects to login when `sweetbake:session` is missing. It is UI gating, not real security.
 
 - `script.js` does top-level `getElementById` / `new Chart(...)` without null checks; keep IDs (`revenueChart`, `reportChart`, `productGrid`, `cartBody`, `modal`, etc.) in sync with `index.html`. Any data change should call `refreshAll()` so POS, tables, stats and charts stay consistent.
 - Source files contain Vietnamese text; keep them UTF-8 (the JS comments show mojibake when read with the wrong encoding, so don't re-save them in another encoding).
